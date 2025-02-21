@@ -1,7 +1,7 @@
 import { MDXRemote, type MDXRemoteProps } from 'next-mdx-remote/rsc';
 
 // * types
-type CustomMDXProps = { source: Source };
+type CustomMDXProps = Source;
 
 type Source = Pick<MDXRemoteProps, 'source'>;
 
