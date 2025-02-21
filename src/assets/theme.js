@@ -15,7 +15,6 @@ const disableTransitions = () => {
   };
 };
 
-console.log('here');
 const media = matchMedia(`(prefers-color-scheme: ${DARK})`);
 
 window.theme = new Proxy(
