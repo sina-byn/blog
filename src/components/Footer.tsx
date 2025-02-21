@@ -15,8 +15,8 @@ const Footer = () => {
           href='https://github.com/sina-byn'
           className='flex items-center gap-x-1'
         >
-          <ArrowUpRight size={18} />
           Github
+          <ArrowUpRight size={18} />
         </Link>
 
         <Link
@@ -24,8 +24,8 @@ const Footer = () => {
           href='https://www.linkedin.com/in/sina-bayandorian/'
           className='flex items-center gap-x-1'
         >
-          <ArrowUpRight size={18} />
           Linkedin
+          <ArrowUpRight size={18} />
         </Link>
 
         <Link
@@ -33,8 +33,8 @@ const Footer = () => {
           href='https://github.com/sina-byn/blog'
           className='flex items-center gap-x-1'
         >
-          <ArrowUpRight size={18} />
           Source
+          <ArrowUpRight size={18} />
         </Link>
       </nav>
 
