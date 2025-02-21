@@ -5,6 +5,7 @@ import './globals.css';
 export const dynamic = 'force-static';
 
 // * components
+import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import InlineScript from '@/components/InlineScript';
 
@@ -31,9 +32,8 @@ const RootLayout = ({ children }: RootLayoutProps) => {
       <head>
         <InlineScript src='./src/assets/theme.js' />
       </head>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <Header />
         {children}
         <Footer />
       </body>
