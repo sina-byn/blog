@@ -1,9 +1,12 @@
 @import 'tailwindcss';
 
+@plugin '@tailwindcss/typography';
+
 @theme {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
 }
+
 
 /*
   The default border color has changed to `currentColor` in Tailwind CSS v4,
