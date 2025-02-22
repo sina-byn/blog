@@ -33,3 +33,7 @@ export const getPosts = (limit?: number) => {
     .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
     .slice(0, limit ? limit : posts.length);
 };
+
+export const calculateReadTime = (text: string) => {
+  return Math.round(text.replace(/#{}\(\),\.!?\*_/g, '').split(/\s+/).length / 200);
+};
