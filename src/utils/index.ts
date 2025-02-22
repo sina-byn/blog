@@ -29,7 +29,7 @@ export const getPosts = (limit?: number) => {
   const posts = fs.readdirSync(__postsdir, 'utf-8');
 
   return posts
-    .map(post => getPost(path.basename(post))[0])
+    .map(post => getPost(path.parse(post).name)[0])
     .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
     .slice(0, limit ? limit : posts.length);
 };
