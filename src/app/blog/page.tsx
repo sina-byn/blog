@@ -17,7 +17,7 @@ const Blog = () => {
 
       <section className='space-y-6'>
         {posts.map(metadata => (
-          <PostLink {...metadata} />
+          <PostLink key={metadata.slug} {...metadata} />
         ))}
       </section>
     </main>
