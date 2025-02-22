@@ -16,7 +16,7 @@ const PostLink = ({ slug, title, publishedAt }: PostLinkProps) => {
         })}
       </time>
 
-      <p>{title} Lorem ipsum dolor sit amet consectetur adipisicing elit. Fuga, error?</p>
+      <p>{title}</p>
     </Link>
   );
 };
