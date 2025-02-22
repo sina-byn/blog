@@ -7,7 +7,7 @@ import { notFound } from 'next/navigation';
 import fm from 'front-matter';
 
 // * types
-type Metadata = { title: string; description: string };
+export type Metadata = { slug: string; title: string; publishedAt: string; description: string };
 
 // * constants
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
@@ -18,7 +18,9 @@ export const getPost = (post: string): [Metadata, string] => {
   if (!fs.existsSync(postPath)) notFound();
 
   const mdx = fs.readFileSync(postPath, 'utf-8');
-  const { attributes, body } = fm<Metadata>(mdx);
+  const { attributes, body } = fm<Omit<Metadata, 'slug'>>(mdx);
 
-  return [attributes, body];
+  const metadata: Metadata = { ...attributes, slug: post };
+
+  return [metadata, body];
 };
