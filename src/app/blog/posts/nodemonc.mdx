@@ -1,0 +1,415 @@
+---
+title: 'Building a Nodemon Clone with Node.js: A Step-by-Step Guide — Unleash the Power of Automation for Your Development Workflow'
+publishedAt: 11-9-2024
+---
+
+Have you ever wondered how [**Nodemon**](https://www.npmjs.com/package/nodemon) reloads a Node.js process whenever a file changes? Let’s explore it together by building our own version, which we’ll call **“nodemonc”** (short for *nodemon clone*).
+
+Our **nodemon clone** will consist of three main components:
+
+* **File watcher**: Detects changes in files.
+* **Process management**: Starts and stops the child process as needed.
+* **CLI**: Manages command-line arguments.
+
+> *Make sure to visit this post’s github repository. Please consider following this project’s author,&#x20;*[*Sina Bayandorian*](https://github.com/sina-byn)*, and starring the project to show your ❤️ and support.&#x20;*[*https://github.com/sina-byn/nodemonc*](https://github.com/sina-byn/nodemonc)
+
+# Table of Contents
+
+* [Initial Setup](#8335)
+* [File Watcher](#ed0a)
+* [Process Management](#10e8)
+* [CLI — Command Line Interface](#3ec4)
+* [Further Enhancements](#d188)\
+  – [Logger](#ede7)\
+  – [Bonus](#bfc0)
+* [Next Steps and Potential Enhancements](#8a6f)
+
+# Initial Setup
+
+```
+mkdir nodemonc
+cd nodemonc
+npm init -y
+mkdir src
+mkdir .temp
+touch src/index.js
+touch .temp/server.js
+```
+
+Now let’s install our dependencies:
+
+```
+npm i chokidar commander chalk@4.1.2
+```
+
+# File Watcher
+
+The first feature we’ll implement is the file-watching component, responsible for detecting changes in specific files we designate for monitoring. To achieve this, we’ll use the `chokidar` package—a lightweight and efficient, cross-platform file-watching library ideal for our needs. Let’s dive into how it works:
+
+```
+// * src/index.js
+
+const fs = require('fs');
+const chokidar = require('chokidar');
+
+const init = scriptPath => {
+  const scriptExists = fs.existsSync(scriptPath);
+  if (!scriptExists) throw new Error(`Failed resolving script at ${scriptPath}`);
+
+  chokidar.watch(scriptPath).on('change', () => {
+    console.log('script changed');
+  });
+};
+
+init('.temp/server.js');
+```
+
+Then, run:
+
+```
+node src/index.js
+```
+
+Start typing in the `.temp/server.js` file, and you’ll see a "script changed" message logged in the terminal. Now that we have file change detection in place, the next step is to implement a process management system. This system will fork the specified script and manage its restart lifecycle, ensuring smooth restarts on each file change.
+
+# Process Management
+
+In this part of the project, we’ll use the `fork` function from Node.js's `child_process` module to spawn the specified script as a separate process. To get started, create a new file called `process.js` where we’ll handle this functionality.
+
+```
+touch src/process.js
+```
+
+```
+// * src/process.js
+
+const { fork } = require('child_process');
+
+let cp;
+
+const nodeProcess = scriptPath => {
+  const terminate = () => {
+    // * return if there is no process to terminate
+    if (!cp || cp.killed) return;
+
+    // * terminate the process
+    cp.kill();
+  };
+
+  return {
+    init: () => {
+      terminate();
+
+      console.log('Initiating a new process');
+      cp = fork(scriptPath);
+
+      cp.on('spawn', () => {
+        console.log('Process was successfully spawned');
+      });
+
+      cp.on('exit', () => {
+        console.log('Running process terminated');
+      });
+    },
+    terminate,
+  };
+};
+
+module.exports = nodeProcess;
+```
+
+Next, we’ll integrate the `process` module into `src/index.js` to connect our process management functionality with the main application logic.
+
+```
+// * src/index.js
+
+const fs = require('fs');
+const chokidar = require('chokidar');
+
+const nodeProcess = require('./process');
+
+const init = scriptPath => {
+  const scriptExists = fs.existsSync(scriptPath);
+  if (!scriptExists) throw new Error(`Failed resolving script at ${scriptPath}`);
+
+  const np = nodeProcess(scriptPath);
+  np.init();
+
+  chokidar.watch(scriptPath).on('change', () => {
+    console.log('script changed');
+    np.init();
+  });
+
+  // * terminate the running child_process before parent process exit
+  process.on('beforeExit', () => {
+    np.terminate();
+  });
+
+  // * log uncaught errors
+  process.on('uncaughtException', err => {
+    console.log(err);
+  });
+};
+
+init('.temp/server.js');
+```
+
+Now, run `node src/index.js` and make changes to `.temp/server.js` to see the automatic restart in action. The final main component we’ll implement for our nodemon clone is the command-line interface (CLI).
+
+# CLI — Command Line Interface
+
+One of the most popular packages for parsing `stdin` and creating command-line interfaces (CLIs) is `commander`, which we’ll use to build our CLI.
+
+Before diving into the CLI setup, we need to make a few adjustments to `src/index.js` to enable it to be called directly from the CLI.
+
+```
+// * src/index.js
+
+const fs = require('fs');
+const chokidar = require('chokidar');
+
+const nodeProcess = require('./process');
+
+const nodemonc = scriptPath => {
+  const scriptExists = fs.existsSync(scriptPath);
+  if (!scriptExists) throw new Error(`Failed resolving script at ${scriptPath}`);
+
+  const np = nodeProcess(scriptPath);
+  np.init();
+
+  chokidar.watch(scriptPath).on('change', () => {
+    console.log('script changed');
+    np.init();
+  });
+
+  // * terminate the running child_process before parent process exit
+  process.on('beforeExit', () => {
+    np.terminate();
+  });
+
+  // * log uncaught errors
+  process.on('uncaughtException', err => {
+    console.log(err);
+  });
+};
+
+module.exports = nodemonc;
+```
+
+With `src/index.js` now updated, we’re ready to begin building the CLI.
+
+Create a `bin` directory in your project’s root, and within it, add a file named `bin.js`. This file will serve as the entry point for our CLI.
+
+```
+mkdir bin
+touch bin/cli.js
+```
+
+Define the binary path in `package.json` to make our CLI executable. This involves adding a `bin` field to specify the path to `bin.js`. Here’s how to do it:
+
+```
+// * package.json
+
+{
+  ..., 
+  "main": "src/index.js",
+  "bin": "bin/cli.js"
+  ...
+}
+```
+
+By adding this, we allow the `nodemonc` command to be run directly from the command line after installation.
+
+Now, let’s set up the CLI logic by configuring `commander` to handle command-line options and link it to our process management code.
+
+```
+#!/usr/bin/env node
+
+// * bin/cli.js
+
+const { program } = require('commander');
+
+const nodemonc = require('../src');
+
+program
+  .name('nodemonc')
+  .description('nodemonc - nodemon clone - CLI')
+  .argument('<string>', 'script path to execute')
+  .action(scriptPath => {
+    nodemonc(scriptPath);
+  });
+
+program.parse();
+```
+
+With the CLI complete, you can test it by running the command:
+
+```
+npx nodemon .temp/server.js
+```
+
+# Further Enhancements
+
+## Logger
+
+We’ll create a simple logger using the `chalk` package to format console output, making log messages more readable and visually organized.
+
+```
+touch src/logger.js
+```
+
+```
+// * src/logger.js
+
+const chalk = require('chalk');
+
+const _log = (color, ...inputs) => console.log(chalk[color]('[nodemonc]', ...inputs));
+
+const log = (...inputs) => _log('whiteBright', ...inputs);
+
+log.success = (...inputs) => _log('greenBright', ...inputs);
+log.error = (...inputs) => _log('redBright', ...inputs);
+
+log.info = (...inputs) => _log('blueBright', ...inputs);
+log.warn = (...inputs) => _log('yellowBright', ...inputs);
+
+module.exports = log;
+```
+
+Replace all `console.log` calls with the new logger to improve log formatting and consistency.
+
+> I took this opportunity to enhance the log messages for a better developer experience. Additionally, I introduced a variable called `isInitialFork` to display different log messages depending on its state.
+
+```
+// * src/process.js
+
+const { fork } = require('child_process');
+
+const log = require('./log');
+
+let isInitialFork = true;
+let cp;
+
+const nodeProcess = scriptPath => {
+  const terminate = () => {
+    // * return if there is no process to terminate
+    if (!cp || cp.killed) return;
+
+    // * terminate the process
+    cp.kill();
+  };
+
+  return {
+    init: () => {
+      terminate();
+
+      log.warn("to restart at any time, enter 'rs'");
+      log.warn("to exit at any time, enter '.exit'");
+      log.info(`${isInitialFork ? 'starting' : 'restarting'} 'node ${scriptPath}'`);
+      cp = fork(scriptPath);
+
+      cp.on('spawn', () => {
+        log.success(`'node ${scriptPath}' successfully started`);
+        isInitialFork = false;
+      });
+
+      cp.on('exit', () => {
+        log.success('clean exit');
+      });
+    },
+    terminate,
+  };
+};
+
+module.exports = nodeProcess;
+```
+
+```
+// * src/index.js
+
+const log = require('./log');
+
+...
+  process.on('uncaughtException', err => {
+    log.error(err);
+  });
+...
+```
+
+## Bonus
+
+You may have noticed two log messages: the first instructs that typing `rs` will manually restart the process, and the second that typing `.exit` will end it. The `rs` command is a built-in feature in nodemon, but we’ll implement this functionality ourselves to make it easier to add additional commands, including `.exit`, as needed.
+
+```
+touch src/readline.js
+```
+
+To implement this feature, we’ll use Node.js’s built-in `readline` module.
+
+```
+// * src/readline.js
+
+const { createInterface } = require('readline');
+
+const rl = {
+  listen: commands => {
+    const _rl = createInterface(process.stdin);
+
+    _rl.on('line', input => {
+      input = input.trim();
+
+      if (input in commands) commands[input]();
+    });
+  },
+};
+
+module.exports = rl;
+```
+
+Integrate the `readline` module into `src/index.js` to handle custom commands.
+
+```
+// * src/index.js
+
+const fs = require('fs');
+const chokidar = require('chokidar');
+
+const nodeProcess = require('./process');
+const rl = require('./readline');
+const log = require('./log');
+
+const nodemonc = scriptPath => {
+  const scriptExists = fs.existsSync(scriptPath);
+  if (!scriptExists) throw new Error(`Failed resolving script at ${scriptPath}`);
+
+  const np = nodeProcess(scriptPath);
+  np.init();
+
+  chokidar.watch(scriptPath).on('change', () => {
+    np.init();
+  });
+
+  rl.listen({ rs: np.init, '.exit': process.exit });
+
+  // * terminate the running child_process before parent process exit
+  process.on('beforeExit', () => {
+    np.terminate();
+  });
+
+  process.on('uncaughtException', err => {
+    log.error(err);
+  });
+};
+
+module.exports = nodemonc;
+```
+
+# Next Steps and Potential Enhancements
+
+* **Adding TypeScript**: Enhance type safety and code clarity by converting the project to TypeScript.
+* **Configuration File and Options**: Introduce a configuration file to allow more customization and flexibility in how the tool runs.
+* **Support for Non-Node Processes**: Extend support to monitor and manage processes beyond just Node.js, making it more versatile.
+
+> ***Note:****&#x20;I used ChatGPT to enhance readability, grammar, and clarity throughout this article, ensuring a smoother reading experience. Additionally, Microsoft Copilot was used to generate the main title and banner image.*
+
+> *Make sure to visit this post’s github repository. Please consider following this project’s author,&#x20;*[*Sina Bayandorian*](https://github.com/sina-byn)*, and starring the project to show your ❤️ and support.&#x20;*[*https://github.com/sina-byn/nodemonc*](https://github.com/sina-byn/nodemonc)
