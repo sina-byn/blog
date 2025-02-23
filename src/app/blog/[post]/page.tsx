@@ -1,5 +1,5 @@
 // * utils
-import { getPost, calculateReadTime, omitKeys, Metadata } from '@/utils';
+import { omitKeys, getPost, getPosts, calculateReadTime, type Metadata } from '@/utils';
 
 // * components
 import CustomMDX from '@/components/CustomMDX';
@@ -20,7 +20,7 @@ export const generateMetadata = async ({ params }: PostProps) => {
 };
 
 export async function generateStaticParams() {
-  return [{}];
+  return getPosts().map(({ slug }) => ({ slug }));
 }
 
 const Post = async ({ params }: PostProps) => {
