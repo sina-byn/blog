@@ -26,6 +26,7 @@
     "eslint": "^9",
     "eslint-config-next": "15.1.7",
     "front-matter": "^4.0.2",
+    "medium-export": "^1.1.2",
     "next-mdx-remote": "^5.0.0",
     "postcss": "^8",
     "tailwindcss": "^4.0.0",
