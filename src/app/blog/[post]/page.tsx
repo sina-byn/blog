@@ -1,5 +1,5 @@
 // * utils
-import { getPost, calculateReadTime } from '@/utils';
+import { getPost, calculateReadTime, omitKeys, Metadata } from '@/utils';
 
 // * components
 import CustomMDX from '@/components/CustomMDX';
@@ -9,6 +9,15 @@ import { Clock } from '@geist-ui/icons';
 
 // * types
 type PostProps = { params: Promise<{ post: string }> };
+
+export const generateMetadata = async ({ params }: PostProps) => {
+  const { post } = await params;
+  const [metadata] = getPost(post);
+
+  const withOmitMetadata = omitKeys<Metadata>(metadata, ['slug', 'publishedAt']);
+
+  return withOmitMetadata;
+};
 
 export async function generateStaticParams() {
   return [{}];
