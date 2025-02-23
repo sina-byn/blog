@@ -1,0 +1,255 @@
+---
+title: 'Build a Simple JS Syntax Highlighter in Under 60 Lines of JavaScript'
+publishedAt: 10-8-2024
+---
+
+Have you ever needed to insert a block of code into your blog? For that, you typically use a syntax highlighter like ShikiJS, Highlight.js, or PrismJS. But what if you could create your own? In this tutorial, we’ll show you how to build a simple JavaScript syntax highlighter — and the best part? We’ll do it in **under 60 lines of JavaScript code**!
+
+> *Make sure to visit this post’s github repository. Please consider following this project’s author,&#x20;*[*Sina Bayandorian*](https://github.com/sina-byn)*, and starring the project to show your ❤️ and support.&#x20;*[*https://github.com/sina-byn/js-syntax-highlighter*](https://github.com/sina-byn/js-syntax-highlighter)
+
+# Initial Setup
+
+```
+mkdir syntax-highlighter
+cd syntax-highlighter
+npm create vite@latest -- --template vanilla
+npm i esprima
+```
+
+Remove unnecessary files:
+
+```
+rm counter.js javascript.svg
+```
+
+Replace the existing CSS in your `style.css` file with the following code:
+
+```
+/* * style.css */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  height: 100%;
+}
+
+code {
+  display: block;
+  width: 100%;
+  height: 100svh;
+}
+
+pre {
+  width: 100%;
+  height: 100%;
+  background: #0d0d1d;
+}
+```
+
+Replace the existing code inside your `main.js` file with the following:
+
+```
+// * main.js
+
+import * as esprima from 'esprima';
+
+import './style.css';
+
+// * --- rest of the code goes here ---
+```
+
+Finally, let’s update the HTML structure. Replace the existing content in your `index.html` file with the following to set up the page
+
+```
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vite App</title>
+  </head>
+  <body>
+    <div id="app">
+      <code>
+        <pre></pre>
+      </code>
+    </div>
+
+    <script type="module" src="/main.js"></script>
+  </body>
+</html>
+```
+
+Now that everything is set up, we’re ready to get started!
+
+# Why Esprima?
+
+I chose Esprima for parsing and tokenizing because of its simplicity and ease of use. It also provides a limited number of tokens, which is more than enough for the purpose of this tutorial. This makes it a perfect choice for building a lightweight syntax highlighter.
+
+> *To explore the full list of tokens supported by Esprima, you can check out the&#x20;*`token.ts`*&#x20;file in the package. It contains all the details you need about the available token types.*
+
+## esprima tokens:
+
+* `Boolean`
+* `Identifier`
+* `Keyword`
+* `Null`
+* `Numeric`
+* `Punctuator`
+* `String`
+* `RegularExpression`
+* `Template`
+
+Now, we need to define a color for each type of token we’ve mentioned. Let’s go ahead and do that:
+
+```
+// * main.js
+
+// * --- snip ---
+
+const tokenColors = {
+  Boolean: '#5653ff',
+  Identifier: '#FD4C87',
+  Keyword: '#F78C6C',
+  Null: '#F78C6C',
+  Numeric: '#F78C6C',
+  Punctuator: '#89DDFF',
+  String: '#C3E88D',
+  RegularExpression: '#89DDFF',
+  Template: '#C3E88D',
+};
+```
+
+Next, let’s create a function called `highlight` that will implement the main logic of our syntax highlighter.
+
+```
+// * main.js
+
+// * --- snip ---
+
+const highlight = (input, codeBlock) => {
+};
+```
+
+The `highlight` function follows four main steps:
+
+1. **Tokenize the input** — Breaking the code into manageable pieces.
+2. **Wrap each token with a&#x20;**`span`**&#x20;element** – To apply specific styles.
+3. **Set the spans’ text color based on the token type** — Assigning colors for better readability.
+4. **Append the spans to the code element** — To render the highlighted code on the page.
+
+```
+// * main.js
+
+// * --- snip ---
+
+const highlight = (input, codeBlock) => {
+  const tokens = esprima.tokenize(input);
+
+  for (const token of tokens) {
+    const { type, value } = token;
+    const tokenColor = tokenColors[type] || '#ffffff'; // * defaults to white
+
+    const tokenEl = document.createElement('span');
+    tokenEl.style.color = tokenColor;
+    tokenEl.textContent = value;
+    codeBlock.append(tokenEl);
+  }
+};
+
+highlight('const x = 10;', document.querySelector('code pre'));
+```
+
+Once everything is set up, run `npm run dev` and open the provided URL in your browser to see your syntax highlighter in action.
+
+You’ll see that your code is highlighted, but there’s one issue: the whitespace is missing. This happens because Esprima ignores whitespace when tokenizing the code. To fix this, we’ll configure Esprima to include a range for each token it recognizes:
+
+```
+// * main.js
+
+// * --- snip ---
+
+const highlight = (input, codeBlock) => {
+  const tokens = esprima.tokenize(input, { range: true });
+  // * --- snip ---
+};
+```
+
+By setting `range: true` in `esprima.tokenize()`, Esprima will now include a `range` field, which is an array of two integers: the first being the start index of the token and the second being the end index (plus one). By finding the gaps between consecutive tokens, we can detect the whitespace and include it in the final highlighted output.
+
+**There are three types of whitespace we need to account for:**
+
+1. **Initial Whitespace** — The space before the code starts.
+2. **Middle Whitespace** — The space between tokens.
+3. **End Whitespace** — The space after the code ends.
+
+We’ll need to handle all three to ensure the code is displayed exactly as intended, including any leading or trailing spaces.
+
+Next, we’ll create a function that will append the necessary whitespaces into the code block:
+
+```
+// * --- snip ---
+
+const appendTextNode = (text, codeBlock) => {
+  if (text.length === 0) return;
+  codeBlock.append(document.createTextNode(text));
+};
+
+const highlight = (input, codeBlock) => {
+  // * --- snip ---
+}
+```
+
+Now, let’s update the `highlight` function to properly handle the whitespace and apply the necessary fixes:
+
+```
+// * --- snip ---
+
+const highlight = (input, codeBlock) => {
+  const tokens = esprima.tokenize(input, { range: true });
+  const initialWhitespace = /(?:\s|\n)*/.exec(input)[0];
+
+  appendTextNode(initialWhitespace, codeBlock);
+
+  for (let i = 0; i < tokens.length; i++) {
+    const token = tokens[i];
+    const { type, value, range } = token;
+    const [_, rangeEnd] = range;
+
+    const tokenColor = tokenColors[type] || '#ffffff'; // * defaults to white
+
+    const tokenEl = document.createElement('span');
+    tokenEl.style.color = tokenColor;
+    tokenEl.textContent = value;
+    codeBlock.append(tokenEl);
+
+    const nextToken = tokens[i + 1];
+    if (!nextToken) break;
+
+    const { range: nextTokenRange } = nextToken;
+    const [nextRangeStart] = nextTokenRange;
+    const midWhitespace = input.slice(rangeEnd, nextRangeStart);
+
+    appendTextNode(midWhitespace, codeBlock);
+  }
+
+  const lastToken = tokens.at(-1);
+  const [_, lastRangeEnd] = lastToken.range;
+  const endWhitespace = input.slice(lastRangeEnd);
+
+  appendTextNode(endWhitespace, codeBlock);
+};
+
+highlight('const x = 10;\nconst y = 11;', document.querySelector('code pre'));
+```
+
+And that’s it! We’re done with our syntax highlighter. Run `npm run dev` and check out the final result in your browser.
+
+> ***Note:****&#x20;I used ChatGPT to enhance readability, grammar, and clarity throughout this article, ensuring a smoother reading experience. Additionally, Microsoft Copilot was used to generate the banner image.*
+
+> *Make sure to visit this post’s github repository. Please consider following this project’s author,&#x20;*[*Sina Bayandorian*](https://github.com/sina-byn)*, and starring the project to show your ❤️ and support.&#x20;*[*https://github.com/sina-byn/js-syntax-highlighter*](https://github.com/sina-byn/js-syntax-highlighter)
