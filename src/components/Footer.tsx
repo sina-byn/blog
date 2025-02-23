@@ -46,7 +46,7 @@ const Footer = () => {
       </div>
 
       {pkg?.license === 'MIT' && (
-        <div className='text-sm text-neutral-600 lg:text-neutral-400 mt-4'>
+        <div className='text-sm text-neutral-600 lg:text-neutral-400 mt-4 pb-32'>
           &copy; {new Date().getFullYear()} {pkg.license} Licensed
         </div>
       )}
