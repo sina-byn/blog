@@ -26,7 +26,7 @@ Our **nodemon clone** will consist of three main components:
 
 # Initial Setup
 
-```
+```bash
 mkdir nodemonc
 cd nodemonc
 npm init -y
@@ -38,7 +38,7 @@ touch .temp/server.js
 
 Now let’s install our dependencies:
 
-```
+```bash
 npm i chokidar commander chalk@4.1.2
 ```
 
@@ -46,7 +46,7 @@ npm i chokidar commander chalk@4.1.2
 
 The first feature we’ll implement is the file-watching component, responsible for detecting changes in specific files we designate for monitoring. To achieve this, we’ll use the `chokidar` package—a lightweight and efficient, cross-platform file-watching library ideal for our needs. Let’s dive into how it works:
 
-```
+```js
 // * src/index.js
 
 const fs = require('fs');
@@ -66,7 +66,7 @@ init('.temp/server.js');
 
 Then, run:
 
-```
+```bash
 node src/index.js
 ```
 
@@ -76,11 +76,11 @@ Start typing in the `.temp/server.js` file, and you’ll see a "script changed" 
 
 In this part of the project, we’ll use the `fork` function from Node.js's `child_process` module to spawn the specified script as a separate process. To get started, create a new file called `process.js` where we’ll handle this functionality.
 
-```
+```bash
 touch src/process.js
 ```
 
-```
+```js
 // * src/process.js
 
 const { fork } = require('child_process');
@@ -120,7 +120,7 @@ module.exports = nodeProcess;
 
 Next, we’ll integrate the `process` module into `src/index.js` to connect our process management functionality with the main application logic.
 
-```
+```js
 // * src/index.js
 
 const fs = require('fs');
@@ -162,7 +162,7 @@ One of the most popular packages for parsing `stdin` and creating command-line i
 
 Before diving into the CLI setup, we need to make a few adjustments to `src/index.js` to enable it to be called directly from the CLI.
 
-```
+```js
 // * src/index.js
 
 const fs = require('fs');
@@ -200,14 +200,14 @@ With `src/index.js` now updated, we’re ready to begin building the CLI.
 
 Create a `bin` directory in your project’s root, and within it, add a file named `bin.js`. This file will serve as the entry point for our CLI.
 
-```
+```bash
 mkdir bin
 touch bin/cli.js
 ```
 
 Define the binary path in `package.json` to make our CLI executable. This involves adding a `bin` field to specify the path to `bin.js`. Here’s how to do it:
 
-```
+```json
 // * package.json
 
 {
@@ -222,7 +222,7 @@ By adding this, we allow the `nodemonc` command to be run directly from the comm
 
 Now, let’s set up the CLI logic by configuring `commander` to handle command-line options and link it to our process management code.
 
-```
+```js
 #!/usr/bin/env node
 
 // * bin/cli.js
@@ -244,7 +244,7 @@ program.parse();
 
 With the CLI complete, you can test it by running the command:
 
-```
+```bash
 npx nodemon .temp/server.js
 ```
 
@@ -254,11 +254,11 @@ npx nodemon .temp/server.js
 
 We’ll create a simple logger using the `chalk` package to format console output, making log messages more readable and visually organized.
 
-```
+```bash
 touch src/logger.js
 ```
 
-```
+```js
 // * src/logger.js
 
 const chalk = require('chalk');
@@ -280,7 +280,7 @@ Replace all `console.log` calls with the new logger to improve log formatting an
 
 > I took this opportunity to enhance the log messages for a better developer experience. Additionally, I introduced a variable called `isInitialFork` to display different log messages depending on its state.
 
-```
+```js
 // * src/process.js
 
 const { fork } = require('child_process');
@@ -324,7 +324,7 @@ const nodeProcess = scriptPath => {
 module.exports = nodeProcess;
 ```
 
-```
+```js
 // * src/index.js
 
 const log = require('./log');
@@ -340,13 +340,13 @@ const log = require('./log');
 
 You may have noticed two log messages: the first instructs that typing `rs` will manually restart the process, and the second that typing `.exit` will end it. The `rs` command is a built-in feature in nodemon, but we’ll implement this functionality ourselves to make it easier to add additional commands, including `.exit`, as needed.
 
-```
+```bash
 touch src/readline.js
 ```
 
 To implement this feature, we’ll use Node.js’s built-in `readline` module.
 
-```
+```js
 // * src/readline.js
 
 const { createInterface } = require('readline');
@@ -368,7 +368,7 @@ module.exports = rl;
 
 Integrate the `readline` module into `src/index.js` to handle custom commands.
 
-```
+```js
 // * src/index.js
 
 const fs = require('fs');

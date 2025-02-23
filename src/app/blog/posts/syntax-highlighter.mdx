@@ -9,7 +9,7 @@ Have you ever needed to insert a block of code into your blog? For that, you typ
 
 # Initial Setup
 
-```
+```bash
 mkdir syntax-highlighter
 cd syntax-highlighter
 npm create vite@latest -- --template vanilla
@@ -18,13 +18,13 @@ npm i esprima
 
 Remove unnecessary files:
 
-```
+```bash
 rm counter.js javascript.svg
 ```
 
 Replace the existing CSS in your `style.css` file with the following code:
 
-```
+```css
 /* * style.css */
 
 * {
@@ -52,7 +52,7 @@ pre {
 
 Replace the existing code inside your `main.js` file with the following:
 
-```
+```js
 // * main.js
 
 import * as esprima from 'esprima';
@@ -64,7 +64,7 @@ import './style.css';
 
 Finally, let’s update the HTML structure. Replace the existing content in your `index.html` file with the following to set up the page
 
-```
+```html
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -107,7 +107,7 @@ I chose Esprima for parsing and tokenizing because of its simplicity and ease of
 
 Now, we need to define a color for each type of token we’ve mentioned. Let’s go ahead and do that:
 
-```
+```js
 // * main.js
 
 // * --- snip ---
@@ -127,7 +127,7 @@ const tokenColors = {
 
 Next, let’s create a function called `highlight` that will implement the main logic of our syntax highlighter.
 
-```
+```js
 // * main.js
 
 // * --- snip ---
@@ -143,7 +143,7 @@ The `highlight` function follows four main steps:
 3. **Set the spans’ text color based on the token type** — Assigning colors for better readability.
 4. **Append the spans to the code element** — To render the highlighted code on the page.
 
-```
+```js
 // * main.js
 
 // * --- snip ---
@@ -169,7 +169,7 @@ Once everything is set up, run `npm run dev` and open the provided URL in your b
 
 You’ll see that your code is highlighted, but there’s one issue: the whitespace is missing. This happens because Esprima ignores whitespace when tokenizing the code. To fix this, we’ll configure Esprima to include a range for each token it recognizes:
 
-```
+```js
 // * main.js
 
 // * --- snip ---
@@ -192,7 +192,7 @@ We’ll need to handle all three to ensure the code is displayed exactly as inte
 
 Next, we’ll create a function that will append the necessary whitespaces into the code block:
 
-```
+```js
 // * --- snip ---
 
 const appendTextNode = (text, codeBlock) => {
@@ -207,7 +207,7 @@ const highlight = (input, codeBlock) => {
 
 Now, let’s update the `highlight` function to properly handle the whitespace and apply the necessary fixes:
 
-```
+```js
 // * --- snip ---
 
 const highlight = (input, codeBlock) => {
