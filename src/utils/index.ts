@@ -37,3 +37,9 @@ export const getPosts = (limit?: number) => {
 export const calculateReadTime = (text: string) => {
   return Math.round(text.replace(/#{}\(\),\.!?\*_/g, '').split(/\s+/).length / 200);
 };
+
+export const omitKeys = <T extends { [k: string]: unknown }>(obj: T, keys: (keyof T)[]) => {
+  const withOmit = { ...obj };  
+  for (const key of keys) delete withOmit[key];
+  return withOmit;
+};
