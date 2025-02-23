@@ -1,8 +1,14 @@
+import type { Metadata } from 'next';
+
 // * utils
 import { getPosts } from '@/utils';
 
 // * components
 import PostLink from '@/components/PostLink';
+
+export const metadata: Metadata = {
+  title: 'Blog',
+};
 
 const Blog = () => {
   const posts = getPosts();
