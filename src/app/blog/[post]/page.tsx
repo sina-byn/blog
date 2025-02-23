@@ -20,7 +20,7 @@ export const generateMetadata = async ({ params }: PostProps) => {
 };
 
 export async function generateStaticParams() {
-  return getPosts().map(({ slug }) => ({ slug }));
+  return getPosts().map(({ slug }) => ({ post: slug }));
 }
 
 const Post = async ({ params }: PostProps) => {
