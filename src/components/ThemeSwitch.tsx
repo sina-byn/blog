@@ -10,6 +10,7 @@ import { Sun, Moon, Display } from '@geist-ui/icons';
 type Theme = 'system' | 'dark' | 'light';
 
 declare global {
+  // eslint-disable-next-line no-var
   var theme: { value: Theme };
 }
 
