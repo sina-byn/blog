@@ -19,7 +19,7 @@ const SearchButton = ({ os }: SearchButtonProps) => {
     <button
       type='button'
       onClick={clickHandler}
-      className='flex items-center gap-x-2 rounded-full bg-neutral text-sm cursor-pointer p-2 lg:p-1.5'
+      className='flex items-center gap-x-2 rounded-full bg-neutral text-sm cursor-pointer'
     >
       <Search size={20} className='stroke-foreground' />
 
