@@ -4,6 +4,9 @@ import './globals.css';
 
 export const dynamic = 'force-static';
 
+// * data
+import { baseURL } from './sitemap';
+
 // * components
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -20,6 +23,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(baseURL),
   title: {
     default: "Sina Bayandorian's Portfolio",
     template: '%s | Sina Bayandorian',
@@ -41,7 +45,7 @@ const RootLayout = ({ children }: RootLayoutProps) => {
         <Header />
         {children}
         <Footer />
-        
+
         <div id='popup-root' />
       </body>
     </html>
