@@ -6,8 +6,9 @@ import { getPost } from '@/utils';
 // * types
 type ImageProps = { params: Promise<{ post: string }> };
 
-export const alt = 'About Acme';
 export const contentType = 'image/png';
+export const size = { width: 1200, height: 630 };
+export const alt = "Sina Bayandorian's Blog Post";
 
 const Image = async ({ params }: ImageProps) => {
   const { post } = await params;
@@ -36,7 +37,7 @@ const Image = async ({ params }: ImageProps) => {
         </p>
       </div>
     ),
-    { width: 1200, height: 630 }
+    { ...size }
   );
 };
 
