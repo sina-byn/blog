@@ -79,7 +79,7 @@ const SearchPopup = () => {
           <div className='popup stack items-center justify-items-center fixed inset-0 isolate z-30 w-full'>
             <div onClick={toggleHandler} className='backdrop size-full bg-black/60' />
 
-            <div className='h-[calc(100%_-_200px)] w-full max-w-prose pointer-events-none px-4'>
+            <div className='h-[calc(100%_-_200px)] w-full max-w-prose pointer-events-none px-4 sm:px-0'>
               <div className='w-full h-fit bg-background border dark:border-current/50 rounded-xl pointer-events-auto'>
                 <header className='flex items-center justify-between gap-x-2 p-3'>
                   <input
