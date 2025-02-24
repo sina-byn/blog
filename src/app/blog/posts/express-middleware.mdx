@@ -1,0 +1,189 @@
+---
+title: 'Code an express middleware to optimize your images'
+publishedAt: 1-26-2024
+---
+
+In this post we will implement an [express.js](https://expressjs.com/) middleware that utilizes the [sharp](https://sharp.pixelplumbing.com/) package to optimize images.
+
+***TLDR;****&#x20;The full code is available as a gist at the end of this story.*
+
+> To further speed up your REST API development in express. I suggest that you use the [Express REST Snippets](https://marketplace.visualstudio.com/items?itemName=sina-byn.express-rest-snippets) VS Code extenstion.
+
+Initialization
+
+```bash
+mkdir express-image-opt-middleware
+cd express-image-opt-middleware
+npm init -y
+touch index.js
+touch utils.js
+```
+
+Now, let’s install our dependencies:
+
+```bash
+npm i express sharp
+npm i -D nodemon
+```
+
+Configure npm scripts:
+
+```json
+// package.json
+{
+  ...,
+  "scripts": {
+    "dev": "nodemon index.js",
+    "start": "node index.js"
+  },
+  ...
+}
+```
+
+Initialize an express server:
+
+```js
+// index.js
+
+const express = require('express');
+const fs = require('fs/promises');
+const path = require('path');
+
+const app = express();
+
+app.listen(8080, () => {
+  console.log("server running at http://localhost:8080");
+});
+```
+
+Normally in order to serve you static assets through express you use the built-in `express.static` middleware:
+
+```js
+app.use(express.static('public'));
+```
+
+We don’t need this middleware because we are going to implement our own. The first thing to understand is that when you try to display an image, there is a GET request with a specific URL behind the scenes fetching the image from the server and displaying it. What we do here is intercept this request and serve an optimized image on-demand, based on the provided query parameters in the URL.
+
+```js
+// index.js
+
+app.get('*', async (req, res, next) => {
+  const storagePath = path.join(__dirname, 'public');
+  const fileName = req.params[0] ?? '';
+  const filePath = path.join(storagePath, fileName);
+
+  try {
+    const stats = await fs.stat(filePath);
+    if (!stats.isFile()) return next();
+
+    // * the rest of the code goes here
+  } catch(err) {
+    console.error(err);
+    res.status(404).send('File not found');
+  }
+});
+```
+
+We need to set a proper `Content-Type` header based on the requested image:
+
+```js
+// utils.js
+const path = require('path');
+
+exports.getContentType = fileName => {
+  const ext = path.extname(fileName).slice(1);
+  let contentType;
+  
+  switch (ext) {
+    case 'jpg':
+    case 'jfif':
+    case 'jpeg':
+      contentType = 'image/jpeg';
+      break;
+    case 'png':
+      contentType = 'image/png';
+      break;
+    case 'webp':
+      contentType = 'image/webp';
+      break;
+    case 'svg':
+      contentType = 'image/svg+xml';
+      break;
+    default:
+      contentType = 'application/octet-stream';
+  }
+
+  return contentType;
+};
+```
+
+```js
+// index.js
+
+// * setting the Content-Type
+// * make sure to require getContentType
+const contentType = getContentType(fileName);
+res.setHeader('Content-Type', contentType);
+  
+// * serve svg and unknown files as they are
+if (['image/svg+xml', 'application/octet-stream'].includes(contentType)) {
+  const readStream = createReadStream(filePath);
+  readStream.pipe(res);
+  readStream.on('error', next);
+  return;
+}
+```
+
+**Note** that the `fs/promises` API does not provide a `createReadStream` function. To get the best of both worlds, use:
+
+```js
+const { createReadStream } = require('fs');
+const fs = require('fs/promises');
+```
+
+This middleware understands the following query params:
+
+* `q` — quality
+* `w `— width
+* `h` — height
+
+**Note** that all of these params are optional.
+
+If only one of `w` or `h` is specified, the image’s original aspect ratio will be used to calculate the other dimension.
+
+```js
+// index.js
+
+// * make sure to include the sharp package
+const image = sharp(filePath);
+const metadata = await image.metadata();
+const aspectRatio = metadata.width / metadata.height;
+const quality = Math.trunc(+(req.query.q ?? 100));
+let width = Math.trunc(+(req.query.w ?? 0));
+let height = Math.trunc(+(req.query.h ?? 0));
+
+// * only width is specified
+if (width && !height) {
+  height = Math.round(width * (1 / aspectRatio));
+
+  // * only height is specified
+} else if (height && !width) {
+  width = Math.round(height * aspectRatio);
+
+  // * neither one is specified
+} else {
+  width = metadata.width;
+  height = metadata.height;
+}
+
+const stream = image
+  .resize({ width, height })
+  .jpeg({ quality, progressive: true, force: false })
+  .webp({ quality, progressive: true, force: false })
+  .png({ quality, progressive: true, force: false });
+
+stream.pipe(res);
+stream.on('error', next);
+```
+
+Here’s the full code of the middleware as a [gist](https://gist.github.com/sina-byn/d99028438812718cb60236cc45357eec):
