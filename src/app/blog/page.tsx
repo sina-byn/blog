@@ -4,7 +4,7 @@ import type { Metadata } from 'next';
 import { getPosts } from '@/utils';
 
 // * components
-import PostLink from '@/components/PostLink';
+import PostList from '@/components/PostList';
 
 export const metadata: Metadata = {
   title: 'Blog',
@@ -21,11 +21,7 @@ const Blog = () => {
         <hr />
       </header>
 
-      <section className='space-y-6'>
-        {posts.map(metadata => (
-          <PostLink key={metadata.slug} {...metadata} />
-        ))}
-      </section>
+      <PostList />
     </main>
   );
 };
