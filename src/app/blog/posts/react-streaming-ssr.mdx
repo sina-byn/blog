@@ -1,0 +1,447 @@
+---
+title: 'Implement Server-Side Rendering and UI Streaming from scratch in React using Suspense'
+publishedAt: 6-7-2024
+---
+
+In This post we will implement server-side rendering and UI streaming in [React](https://react.dev/) from scratch using [express.js](https://expressjs.com/) as our server framework.
+
+One of the most exciting features of [Next.js](https://nextjs.org/) is [UI Streaming](https://nextjs.org/docs/app/building-your-application/routing/loading-ui-and-streaming), which enables us to show partial content alongside an instant loading state for the parts that still need data to be fetched directly from the server. While it’s easy to use streaming in Next.js, it’s still a good idea to try implementing our own version of streaming. So, let’s get started.
+
+> *Make sure to visit this post’s github repository. Please consider following this project’s author,&#x20;*[*Sina Bayandorian*](https://github.com/sina-byn)*, and starring the project to show your ❤️ and support.&#x20;*[*https://github.com/sina-byn/react-streaming*](https://github.com/sina-byn/react-streaming)
+
+# Table of Contents
+
+* [Initial Setup](#5337)
+* [Interactivity](#3bdb)
+* [Streaming](#4dc7)
+* [Additional Resources](#d934)
+
+# Initial Setup
+
+```bash
+$ mkdir react-streaming
+$ cd react-streaming
+$ mkdir src
+$ npm init -y
+$ touch src/server.js
+```
+
+Now let’s install our dependencies:
+
+```bash
+$ npm i --save express dotenv chalk@4.1.2
+$ npm i -D @babel/core @babel/node @babel/preset-env @babel/preset-react
+```
+
+Configure babel `.babelrc`:
+
+```json
+{
+    "ignore": ["node_modules"],
+    "presets": [
+        ["@babel/preset-env", {
+            "targets": {
+                "node": "current"
+            }
+        }], "@babel/preset-react"
+    ]
+}
+```
+
+Initializing our Express server:
+
+```js
+// src/server.js
+
+import chalk from 'chalk';
+import express from 'express';
+import { config as env } from 'dotenv';
+
+// * initialization
+env();
+const app = express();
+const port = process.env.PORT ?? 3000;
+
+app.use(express.static('public'));
+
+app.get('/', (_req, res) => {
+  res.status(200).json({ message: "Success" })
+});
+
+app.listen(port, () => {
+  console.log(chalk.blueBright(`Server running at http://localhost:${port}`));
+});
+```
+
+In order to server-side render our React application, we need the `renderToPipeableStream` function from `react-dom/server`. So, let’s install it alongside `react` and create some necessary components:
+
+```bash
+$ npm i react react-dom
+```
+
+```bash
+$ mkdir src/client
+$ touch src/client/App.jsx
+$ touch src/client/Html.jsx
+```
+
+```jsx
+// src/client/App.jsx
+
+import * as React from 'react';
+
+const App = () => {
+  return (<div>This is our React application</div>);
+};
+
+export default App;
+```
+
+```jsx
+// src/client/Html.jsx
+
+import * as React from 'react';
+
+// * initial HTML boilerplate
+const Html = ({ children }) => {
+  return (
+    <html>
+      <head>
+        <meta charSet='UTF-8' />
+        <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+        <title>Document</title>
+      </head>
+      <body>
+        <div id='app'>{children}</div>
+      </body>
+    </html>
+  );
+};
+
+export default Html;
+```
+
+Next, we will add server-side rendering logic to our Express server:
+
+```js
+// src/server.js
+
+import * as React from 'react';
+import { renderToPipeableStream } from 'react-dom/server';
+
+// * components
+import Html from './client/Html';
+import App from './client/App';
+
+app.get('/', (_req, res) => {
+  const stream = renderToPipeableStream(
+    <Html>
+      <App />
+    </Html>,
+    {
+      onShellReady() {
+        stream.pipe(res);
+      },
+    }
+  );
+});
+```
+
+Add an NPM script to start the server:
+
+```json
+// package.json
+
+{
+  "scripts": {
+    "start:server": "npx babel-node src/server.js"
+  }
+}
+```
+
+```bash
+$ npm run start:server
+```
+
+Open `http//:localhost:3000` in your browser and view the page source, you will see that your React app is successfully rendered on the server.
+
+Now we have a React app that is server-side rendered, but we have two major problems:
+
+1. Our React app doesn’t have any interactivity.
+2. We are not exactly streaming the components even though we are using `renderToPipeableStream`.
+
+Let’s first address the interactivity issue.
+
+# Interactivity
+
+There are two steps involved in creating a server-side rendered React app:
+
+1. Render the app on the server and serve it.
+2. Have React hydrate the server-side HTML and add interactivity.
+
+To allow React to hydrate the app, we use the `hydarteRoot` function provided by `react-dom/client` to have React take over the control once server is done serving the HTML.
+
+To achieve this, we utilize the `hydrateRoot` function provided by `react-dom/client`, allowing React to take control once the server has finished serving the HTML — the initial HTML in case of streaming.
+
+So let’s create `index.jsx` :
+
+```bash
+$ touch src/client/index.jsx
+```
+
+```jsx
+// src/client/index.jsx
+
+import * as React from 'react';
+import { hydrateRoot } from 'react-dom/client';
+
+// * components
+import App from './App';
+
+hydrateRoot(document.getElementById('app'), <App />);
+```
+
+Now we need a way to transpile and bundle `index.jsx` so that it can be included in the HTML sent from the server. For this we use `webpack` and `babel-loader`:
+
+```bash
+$ npm i -D webpack webpack-cli babel-loader
+```
+
+```js
+// webpack.config.js
+
+const path = require('path');
+
+module.exports = {
+  entry: './src/client/index.jsx',
+  output: {
+    filename: 'bundle.js',
+    path: path.resolve(__dirname, 'public'),
+  },
+  module: {
+    rules: [
+      {
+        test: /\.(js|jsx)$/,
+        exclude: /node_modules/,
+        use: {
+          loader: 'babel-loader',
+          options: {
+            presets: ['@babel/preset-env', '@babel/preset-react'],
+          },
+        },
+      },
+    ],
+  },
+  resolve: {
+    extensions: ['.js', '.jsx'],
+  },
+};
+```
+
+```json
+{
+  "scripts": {
+    "build:client": "npx webpack --mode production",
+    "start:server": "npx babel-node src/server.js",
+    "start": "npm run build:client && npm run start:server"
+  }
+}
+```
+
+Then run `$ npm run build:client` to have webpack generate the `bundle.js` inside the `public` folder.
+
+The final step to add interactivity involves including `bundle.js` within the HTML generated on the server, which is quite easy thanks to React. Simply include the script file in the `bootstrapScripts` field of the `renderToPipeableStream` function options.
+
+```js
+app.get('/', (_req, res) => {
+  const stream = renderToPipeableStream(
+    <Html>
+      <App />
+    </Html>,
+    {
+      bootstrapScripts: ['/bundle.js'],
+      onShellReady() {
+        stream.pipe(res);
+      },
+    }
+  );
+});
+```
+
+Let’s check the interactivity:
+
+```bash
+$ touch src/client/Counter.jsx
+```
+
+```jsx
+// src/client/Counter.jsx
+
+import * as React from 'react';
+
+const Counter = () => {
+  const [count, setCount] = React.useState(0);
+
+  const decrement = () => setCount(prev => prev - 1);
+  const increment = () => setCount(prev => prev + 1);
+
+  return (
+    <div className='counter' style={{ display: 'flex', gap: '0.5rem' }}>
+      <button type='button' onClick={decrement}>
+        decrement
+      </button>
+      {count}
+      <button type='button' onClick={increment}>
+        increment
+      </button>
+    </div>
+  );
+};
+
+export default Counter;
+```
+
+```jsx
+// src/client/App.jsx
+
+import * as React from 'react';
+
+// * components
+import List from './List';
+import Counter from './Counter';
+
+const App = () => {
+  return (
+    <main>
+      <p style={{ marginBottom: '1rem' }}>this is the app component</p>
+      <Counter />
+      <React.Suspense
+        fallback={
+          <div style={{ marginTop: '1rem' }}>Loading the List...</div>
+        }
+      >
+        <List />
+      </React.Suspense>
+    </main>
+  );
+};
+
+export default App;
+```
+
+Now start the project with `$ npm run start` and check the counter. You’ll see that it’s fully interactive.
+
+# Streaming
+
+The last step of this tutorial is to ensure that we stream the components needing data and display loading states while waiting for the data to be fetched.
+
+With this setup, we can use React [Suspense boundaries](https://react.dev/reference/react/Suspense) to show loading states using the `fallback` prop, but the problem is that React children can not be promises and the value of a pending fetch request is a `Promise`. So, we will end up with an error. To solve this, we use React’s experimental `use` hook to handle the promise, which is only available under [React’s canary release channel](https://react.dev/blog/2023/05/03/react-canaries).
+
+In order to use this hook we first need to update both `react` and `react-dom` to the canaray version:
+
+```bash
+$ npm install react@canary react-dom@canary
+```
+
+What we need next is a component to be streamed:
+
+```bash
+$ touch src/client/List.jsx
+```
+
+```jsx
+// src/client/List.jsx
+
+import * as React from 'react';
+
+// * data
+const list = [
+  {
+    userId: 1,
+    id: 1,
+    title: 'sunt aut facere repellat provident occaecati excepturi optio',
+    body: 'quia et suscipit\nsuscipit recusandae consequuntur expedita et cum\nreprehenderit molestiae ut ut quas totam\nnostrum rerum est autem sunt rem eveniet architecto',
+  },
+  {
+    userId: 1,
+    id: 2,
+    title: 'qui est esse',
+    body: 'est rerum tempore vitae\nsequi sint nihil reprehenderit dolor beatae ea dolores neque\nfugiat blanditiis voluptate porro vel nihil molestiae ut reiciendis\nqui aperiam non debitis possimus qui neque nisi nulla',
+  },
+  {
+    userId: 1,
+    id: 3,
+    title: 'ea molestias quasi exercitationem repellat qui ipsa sit aut',
+    body: 'et iusto sed quo iure\nvoluptatem occaecati omnis eligendi aut ad\nvoluptatem doloribus vel accusantium quis pariatur\nmolestiae porro eius odio et labore et velit aut',
+  },
+];
+
+const fetchList = () => {
+  return new Promise(resolve => setTimeout(() => resolve(list), 3000));
+};
+
+const List = () => {
+  const [items] = React.useState(React.use(fetchList()));
+
+  return (
+    <div
+      className='list'
+      style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
+    >
+      {items.map(item => (
+        <div
+          key={item.id}
+          style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}
+        >
+          <h3>{item.title}</h3>
+          <p>{item.body}</p>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+export default List;
+```
+
+Now, we should wrap the `List` component with a `Suspense` boundary:
+
+```jsx
+// src/client/App.jsx
+
+import * as React from 'react';
+
+// * components
+import List from './List';
+
+const App = () => {
+  return (
+    <main>
+      this is the app component
+      <React.Suspense fallback={<div>Loading the List...</div>}>
+        <List />
+      </React.Suspense>
+    </main>
+  );
+};
+
+export default App;
+```
+
+```bash
+$ npm run start
+```
+
+Open `http://localhost:3000` wait for 3 seconds and ta-da!
+
+Now you have a working server-side rendered React application that supports UI streaming and instant loading states.
+
+> *Make sure to visit this post’s github repository. Please consider following this project’s author,&#x20;*[*Sina Bayandorian*](https://github.com/sina-byn)*, and starring the project to show your ❤️ and support.&#x20;*[*https://github.com/sina-byn/react-streaming*](https://github.com/sina-byn/react-streaming)
+
+# Additional Resources
+
+* [react.dev — ](https://react.dev/reference/react/use)`use`[ hook](https://react.dev/reference/react/use)
+* [react.dev — ](https://react.dev/reference/react-dom/client/hydrateRoot)`hydrateRoot`
+* [react.dev — ](https://react.dev/reference/react-dom/client/hydrateRoot)`renderToPipeableStream`
+* [Next.js — Loading UI and Streaming](https://nextjs.org/docs/app/building-your-application/routing/loading-ui-and-streaming)
+* [Jack Herrington — React Streaming In Depth: NextJS! Remix! DIY!](https://www.youtube.com/watch?v=o3JWb04DRIs)
