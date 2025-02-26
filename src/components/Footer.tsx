@@ -15,6 +15,7 @@ const Footer = () => {
       <div className='flex items-center justify-between gap-x-4'>
         <nav className='flex items-center gap-x-6 text-sm dark:text-gray-400'>
           <Link
+            target='_blank'
             rel='noopener nofollow noreferrer'
             href='https://github.com/sina-byn'
             className='flex items-center gap-x-1 dark:hover:text-white'
@@ -24,6 +25,7 @@ const Footer = () => {
           </Link>
 
           <Link
+            target='_blank'
             rel='noopener nofollow noreferrer'
             href='https://www.linkedin.com/in/sina-bayandorian/'
             className='flex items-center gap-x-1 dark:hover:text-white'
@@ -33,6 +35,7 @@ const Footer = () => {
           </Link>
 
           <Link
+            target='_blank'
             rel='noopener nofollow noreferrer'
             href='https://github.com/sina-byn/blog'
             className='flex items-center gap-x-1 dark:hover:text-white'
