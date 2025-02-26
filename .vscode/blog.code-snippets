@@ -9,7 +9,7 @@
   "Insert Frontmatter": {
     "scope": "mdx",
     "prefix": "fmt",
-    "body": ["---", "title: ''", "publishedAt: ''", "---"],
+    "body": ["---", "title: ''", "publishedAt: ", "---"],
     "description": "Insert frontmatter into mdx file"
   }
 }
