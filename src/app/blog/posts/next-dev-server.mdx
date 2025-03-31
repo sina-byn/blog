@@ -1,0 +1,283 @@
+---
+title: 'Supercharging the Next.js Dev Server: Building a Custom Wrapper for Enhanced Development'
+publishedAt: 3-31-2025
+---
+
+# Supercharging the Next.js Dev Server: Building a Custom Wrapper for Enhanced Development
+
+Ever used Vite and loved how convenient it is to simply type **“o”** and press **Enter** to open your dev server in the browser? In this story, we’re bringing that same ease to the **Next.js dev server** by building a custom wrapper script. But we’re not stopping there — we’ll go beyond just a simple **“o”** command and add even more functionality to supercharge the development experience.
+
+## Initial Setup
+
+Let’s start by creating a simple **Next.js** project. Run the following command in your terminal:
+
+```sh
+npx create-next-app@latest
+```
+
+This will set up a fresh Next.js application with all the necessary configurations. Once it’s done, navigate into your project folder and get ready to enhance the **Next.js dev server** with a custom wrapper script. 🚀
+
+First, create a new folder at the root of your freshly created **Next.js** project to store our custom scripts. Run the following command:
+
+```sh
+mkdir scripts
+```
+
+Next, create a new file inside the **scripts** folder named **dev.mjs**:
+
+```sh
+touch scripts/dev.mjs
+```
+
+This file will serve as our wrapper script for the **Next.js dev server**, allowing us to extend its functionality.
+
+## Installing Dependencies
+
+Now, install the required dependencies by running the following command:
+
+```sh
+npm i -D cross-spawn openurl kill-port commander picocolors
+```
+
+**What These Packages Do:**
+
+- **cross-spawn** — A better alternative to Node.js’s built-in `child_process.spawn`, ensuring cross-platform compatibility.
+- **openurl** — Opens URLs in the default browser.
+- **kill-port** — Helps terminate processes running on a specific port.
+- **commander** — A powerful command-line argument parser.
+- **picocolors** — A lightweight package for adding terminal colors.
+
+## Implementation
+
+> The whole code is **self-explanatory**, so I’ll avoid unnecessary explanations. However, if you run into any issues, have suggestions, or have questions, feel free to ask in the comments section!
+
+Below is the boilerplate code we’ll be working with, and we’ll implement the defined sections step by step.
+
+```js
+#!/usr/bin/env node
+
+import pc from 'picocolors';
+import killPort from 'kill-port';
+
+import { open } from 'openurl';
+import { spawn } from 'cross-spawn';
+import { program } from 'commander';
+import { createInterface } from 'readline';
+
+const args = process.argv.slice(2); // * Accessing command line args
+let cp; // * Cross-spawn child process reference
+let rl; // * Readline interface instance
+
+const killServer = async () => {};
+
+const exitProcess = async () => {};
+
+const printCommands = () => {};
+
+const initReadline = () => {};
+
+const startDevServer = () => {};
+
+// * Exception handling
+
+// * CLI configuration
+```
+
+Let’s start with the simplest one: the `printCommands` function.
+
+In this step, we’ll create a function that displays a list of available commands when called. This will provide clear instructions on how to interact with the dev server wrapper.
+
+```js
+// * -- snip --
+
+const printCommands = () => {
+  console.log(
+    pc.bold(
+      pc.blue(`
+🚀 Dev server started at ${pc.underline(`http://localhost:${process.env.PORT}`)}
+🔹 Available commands:
+   - ${pc.yellow('[o]')}     → Open in browser
+   - ${pc.yellow('[rs]')}    → Restart server
+   - ${pc.yellow('[cls]')}   → Clear console
+   - ${pc.yellow('[.exit]')} → Exit process
+`),
+    ),
+  );
+};
+
+// * -- snip --
+```
+
+Next, we move on to the `startDevServer` function, which does exactly what its name suggests—starts the **Next.js** development server.
+
+This function will use **cross-spawn** to execute the necessary command to spin up the dev server, allowing us to automate the process while integrating additional functionality, like opening the browser and handling custom commands.
+
+```js
+// * -- snip --
+
+const startDevServer = () => {
+  console.clear();
+
+  printCommands();
+  setTimeout(() => initReadline(), 100);
+
+  cp = spawn('npm', ['run', 'dev', '--', ...args], { stdio: 'inherit' });
+
+  cp.on('close', async () => {
+    console.log(pc.red('🚫 Dev server stopped.'));
+    await killServer();
+    rl.close();
+  });
+};
+
+// * -- snip --
+```
+
+Now you might be wondering, what exactly is `initReadline` and what is `killServer`?
+
+For `initReadline`, you’ll have to wait a little bit longer, but I promise it’ll be worth it since that’s where the magic happens—handling user input and making the interactive commands come to life.
+
+But for now, let’s get to `killServer`. This function is designed to terminate the process running on the same port as the dev server, which is crucial for implementing the restart functionality. Once the port is free, we can start the server again without any issues. This will help us manage the server more effectively.
+
+```js
+// * -- snip --
+
+const killServer = async () => {
+  if (process.env.PORT) {
+    try {
+      await killPort(process.env.PORT);
+    } catch (err) {
+      console.error(pc.red(`⚠️ Error killing port ${process.env.PORT}:`), err);
+    }
+  }
+};
+
+// * -- snip --
+```
+
+To safely exit the dev server, we’ll implement the `exitProcess` function, which will gracefully shut down the server, clean up resources, and terminate any processes. This ensures a smooth experience, preventing leftover processes or open ports when the server is stopped or the script is exited.
+
+```js
+// * -- snip --
+
+const exitProcess = async () => {
+  console.log(pc.cyan('\n👋 Exiting...'));
+
+  if (cp) cp.kill();
+  if (rl) rl.close();
+
+  setTimeout(() => {
+    console.log(pc.bold(pc.magenta('🚪 Process exited. See you next time! ✨')));
+    process.exit(0);
+  }, 100);
+};
+
+// * -- snip --
+```
+
+To open the dev server in the browser or kill the process, we’ll need access to the port. So, let’s implement the **CLI configuration** section, which will handle the related logic and command line arguments.
+
+```js
+// * -- snip --
+
+// * CLI configuration
+program
+  .allowUnknownOption(true)
+  .argument('[args...]')
+  .option('-p, --port <number>', 'Next.js dev server port', 3000)
+  .action((_, { port: _port }) => {
+    const port = +_port;
+    if (isNaN(port)) throw new Error(pc.red('--port must be a valid number'));
+
+    process.env.PORT = port;
+    startDevServer();
+  });
+
+program.parse(process.argv);
+```
+
+What’s a dev server without proper exception handling? Just a bunch of useless lines of code! Let’s get to it ASAP and make sure we handle errors effectively.
+
+```js
+// * -- snip --
+
+// * Exception handling
+process.on('beforeExit', killServer);
+
+process.on('uncaughtException', async err => {
+  console.error(pc.bgRed(pc.white('❌ Uncaught exception:')), err);
+  process.exit(1);
+});
+
+// * -- snip --
+```
+
+Last but not least, we have the final building block of our script, where all the magic happens: the `initReadline` function. This is where we handle user input, making the script interactive.
+
+```js
+// * -- snip --
+
+const initReadline = () => {
+  if (rl) rl.close();
+  rl = createInterface({ input: process.stdin });
+
+  rl.on('line', async line => {
+    switch (line.trim()) {
+      case 'o':
+        console.log(pc.green('🌍 Opening in browser...'));
+        open(`http://localhost:${process.env.PORT}`);
+        break;
+
+      case 'rs':
+        console.log(pc.yellow('♻️ Restarting server...'));
+        cp.kill();
+        await killServer();
+        startDevServer();
+        break;
+
+      case 'cls':
+        console.clear();
+        break;
+
+      case '.exit':
+        await exitProcess();
+        break;
+
+      default:
+        console.log(pc.red('❌ Unknown command! Use [o], [rs], [cls], or [.exit]'));
+    }
+  });
+
+  return rl;
+};
+
+// * -- snip --
+```
+
+The only thing left now is to configure the dev script inside your `package.json`. This will allow us to run the custom wrapper script easily alongside the default Next.js dev server. Simply add the following line to your `package.json` under the `scripts` section:
+
+```json
+"scripts": {
+  "dev": "node scripts/dev.mjs"
+}
+```
+
+And we’re done! I hope you like it. Here’s the full code of the middleware as a gist:
+
+[https://gist.github.com/sina-byn/e396df0164741f6ee475258cb30a8319](https://gist.github.com/sina-byn/e396df0164741f6ee475258cb30a8319)
+
+With this custom wrapper script, you’ve just enhanced the Next.js dev server, making it more efficient and interactive. Enjoy your smoother development workflow!
+
+## Room for Improvements
+
+There’s always room for improvement! Here are a few ideas to enhance your custom wrapper:
+
+- **Semantic Terminal Formatting Functions**: You can create custom formatting functions to make terminal outputs more semantic and easier to read. This could include color-coding different types of messages (e.g., errors in red, success messages in green), or adding custom symbols to indicate statuses (e.g., checkmarks for success, warning signs for issues).
+- **Improved Error Handling and Shutdown Logic**: To prevent issues with processes still occupying the same port, you can improve the shutdown logic to check if the port is free before restarting the server. Additionally, consider adding better error handling for edge cases like network issues, missing dependencies, or invalid arguments.
+- **More Creative and Useful Commands**: Adding more interactive commands could make the script even more powerful. For example:
+- `s` to show the current server status (is it running? what’s the port?).
+- `l` to view logs or errors from the server.
+- `p` to quickly open the documentation for the project or a help menu.
+- `v` to check the current version of Next.js or other dependencies.
+
+These improvements can make your dev server wrapper even more user-friendly and powerful, helping streamline the development process even further!
