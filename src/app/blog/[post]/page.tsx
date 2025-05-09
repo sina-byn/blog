@@ -29,7 +29,7 @@ const Post = async ({ params }: PostProps) => {
   const readTime = calculateReadTime(mdx);
 
   return (
-    <main className='prose dark:prose-invert mx-auto px-4 sm:px-0'>
+    <main className='prose dark:prose-invert dark:prose-headings:text-gray-300 dark:text-gray-300 mx-auto px-4 sm:px-0'>
       <hgroup>
         <h1>{metadata.title}</h1>
         <p>{metadata.description}</p>
