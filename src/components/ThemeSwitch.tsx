@@ -18,7 +18,35 @@ const ThemeSwitch = () => {
   const switchHandler = (e: React.MouseEvent<HTMLButtonElement>) => {
     const newTheme = e.currentTarget.dataset.theme as Theme;
     localStorage.setItem(STORAGE_KEY, newTheme);
-    window.theme.value = newTheme;
+
+    if (!document.startViewTransition) {
+      window.theme.value = newTheme;
+      return;
+    }
+
+    const transition = document.startViewTransition(() => {
+      window.theme.value = newTheme;
+    });
+
+    const x = e.clientX;
+    const y = e.clientY;
+    const finalRadius = Math.hypot(
+      Math.max(x, window.innerWidth - x),
+      Math.max(y, window.innerHeight - y)
+    );
+
+    transition.ready.then(() => {
+      document.documentElement.animate(
+        {
+          clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${finalRadius}px at ${x}px ${y}px)`],
+        },
+        {
+          duration: 500,
+          easing: 'ease-in-out',
+          pseudoElement: '::view-transition-new(root)',
+        }
+      );
+    });
   };
 
   return (
