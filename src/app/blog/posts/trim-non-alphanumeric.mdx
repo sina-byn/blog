@@ -1,0 +1,145 @@
+---
+title: Let's create a simple TypeScript type to trim non-alphanumeric characters
+publishedAt: 12-8-2025
+---
+
+Ever found yourself needing a type-safe normalize function? Well, I did—and this is what I came up with.
+
+> **Note:** This tutorial assumes a fairly deep understanding of TypeScript and template literal types.
+
+> Big shoutout to [this awesome tutorial](https://www.youtube.com/watch?v=KSWDznXWnrs&t=331s) from [Typed Rocks](https://www.youtube.com/@Typed-Rocks) for making this possible.
+
+---
+
+## Step 1: Exclude special characters
+
+First things first: we need to exclude special characters as much as possible.
+We'll use the trick from the tutorial:
+
+```ts
+type Special = Uppercase<string> & Lowercase<string>;
+```
+
+This ensures that variables with this type accept strings whose characters
+have **both lowecase and uppercase forms**.
+
+Next, we need a type for digits:
+
+```ts
+type Digit = '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9';
+```
+
+That's one way to do it. But why keep it easy? Let's make it a bit more interesting:
+
+```ts
+type Digit = '0123456789';
+```
+
+We now need a type to **split the literal type above into a union of characters**.
+Let's call it Split:
+
+```ts
+type Split<T extends string> = T extends ''
+  ? []
+  : T extends `${infer Head}${infer Tail}`
+  ? [Head, ...Split<Tail>]
+  : [T];
+```
+
+Here’s what’s happening:
+
+1. If `T` is an empty string, we return `[]`.
+2. If `T` matches `${infer Head}${infer Tail}`, we take the first character as `Head` and recursively split the `Tail`.
+3. If `T` doesn’t match the pattern, we return `[T]`.
+
+> Think of `Head` as the first character and `Tail` as the rest of the string.
+
+---
+
+TypeScript literals and patterns like `${infer Head}${infer Tail}`
+can feel tricky at first.
+
+**My advice:** rely more on **intuition** rather than pure logic—you'll get the hang of it with practice.
+
+---
+
+Now, we can do:
+
+```ts
+type Digit = Split<'0123456789'>[number];
+```
+
+> `Split` produces
+> `['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']`.
+> Accessing `[number]` gives us the union of the array elements as a type.
+
+## Step 2: Build helper types
+
+We need a few helper types before we can create our main `TrimNonAlphanumeric` type.
+
+- `TrueIfDigit` checks if each character in a string is a digit.
+- `TrueIfAlphabet` checks if each character is not a special character.
+- `IsAlphanumeric` verifies that all characters are either digits or alphabets.
+
+```ts
+type TrueIfDigit<T extends string> = T extends `${infer Head}${infer Tail}`
+  ? Head extends Digit
+    ? TrueIfDigit<Tail>
+    : false
+  : true;
+
+type TrueIfAlphabet<T extends string> = T extends `${infer Head}${infer Tail}`
+  ? Head extends Special
+    ? false
+    : TrueIfAlphabet<Tail>
+  : true;
+
+type IsAlphanumeric<T extends string> = T extends `${infer Head}${infer Tail}`
+  ? TrueIfDigit<Head> extends true
+    ? IsAlphanumeric<Tail>
+    : TrueIfAlphabet<Head> extends true
+    ? IsAlphanumeric<Tail>
+    : false
+  : true;
+```
+
+## Step 3: Create the `TrimNonAlphanumeric` type
+
+Finally, we can write the main type:
+
+```ts
+type TrimNonAlphanumeric<T extends string> = T extends `${infer Head}${infer Tail}`
+  ? IsAlphanumeric<Head> extends true
+    ? `${Head}${TrimNonAlphanumeric<Tail>}`
+    : TrimNonAlphanumeric<Tail>
+  : '';
+```
+
+This recursively checks each character: if it's alphanumeric,
+it's kept; otherwise, it's skipped.
+
+```ts
+// Result: 'useHook';
+type T = TrimNonAlphanumeric<'use_H*o-o*k'>;
+```
+
+Ta-Daaa!!! 🎉
+
+## Step 4: Create the `normalize` function
+
+We want a function that:
+
+1. Accepts a string literal type `T`.
+2. Returns a string where all non-alphanumeric characters are removed.
+3. Is type-safe: TypeScript knows the result matches our `TrimNonAlphanumeric<T>` type.
+
+```ts
+function normalize<T extends string>(input: T) {
+  return input.replace(/[^\dA-Za-z]/g, '') as TrimNonAlphanumeric<T>;
+}
+```
+
+Hope you enjoyed this deep dive into TypeScript!
+
+By the way, if you're wondering why I needed such a type: it's for a WIP project I'm working on.
+I might share updates on this blog once the project is completed—if I remember to, of course 😅.
