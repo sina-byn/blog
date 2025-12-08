@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 import { MDXRemote, type MDXRemoteProps } from 'next-mdx-remote/rsc';
 
 // * plugins
@@ -12,6 +14,8 @@ type Source = Pick<MDXRemoteProps, 'source'>;
 
 type CodeProps = { children: string };
 
+type AnchorProps = React.ComponentProps<'a'>;
+
 const CustomMDX = ({ source }: CustomMDXProps) => {
   return (
     <MDXRemote
@@ -22,6 +26,19 @@ const CustomMDX = ({ source }: CustomMDXProps) => {
       components={{
         code: ({ children }: CodeProps) => {
           return <code dangerouslySetInnerHTML={{ __html: highlight(children) }} />;
+        },
+        a: ({ href = '#', children, ...props }: AnchorProps) => {
+          const isRelative = !href?.startsWith('http');
+
+          return isRelative ? (
+            <Link href={href} {...props}>
+              {children}
+            </Link>
+          ) : (
+            <a href={href} {...props} target='_blank' rel='noopener nofollow noreferrer'>
+              {children}
+            </a>
+          );
         },
       }}
     />
