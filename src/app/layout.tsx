@@ -29,6 +29,7 @@ export const metadata: Metadata = {
     template: '%s | Sina Bayandorian',
   },
   description: "Sina Bayandorian's portfolio and blog built with Next.js and MDX",
+  verification: { google: '0aVU7hmFQkCiP7NbGmnl6Zelf2_srz7qeoZG927OvN0' },
 };
 
 // * types
