@@ -10,6 +10,7 @@ import { baseURL } from './sitemap';
 // * components
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import GooeyCursor from '@/components/GooeyCursor';
 import InlineScript from '@/components/InlineScript';
 
 const geistSans = Geist({
@@ -46,6 +47,7 @@ const RootLayout = ({ children }: RootLayoutProps) => {
         <Header />
         {children}
         <Footer />
+        <GooeyCursor />
 
         <div id='popup-root' />
       </body>

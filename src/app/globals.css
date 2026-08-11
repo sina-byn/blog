@@ -7,6 +7,7 @@
 @theme {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-foreground-dark: var(--foreground-dark);
 }
 
 @layer base {
@@ -20,6 +21,33 @@
 
   [data-theme='dark'] .theme-switch > :nth-child(3) {
     @apply bg-neutral-200 dark:bg-neutral-800;
+  }
+
+  .blob {
+    scale: var(--scale);
+    translate: var(--tx) var(--ty);
+    @apply bg-foreground-dark aspect-square rounded-full;
+  }
+
+  .blob.main {
+    transform: translate(-50%, -50%);
+  }
+
+  .animate-blob {
+    animation: blob 1.5s linear forwards;
+  }
+
+  @keyframes blob {
+    0% {
+      --scale: 0.2;
+    }
+    40% {
+      --scale: 1;
+    }
+    100% {
+      --tx: 0;
+      --ty: 0;
+    }
   }
 }
 
@@ -37,6 +65,7 @@
 
   --background: #fcfcfc;
   --foreground: #171717;
+  --foreground-dark: #ededed;
 
   --sh-class: #2d5e9d;
   --sh-identifier: #949494;
