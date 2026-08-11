@@ -101,3 +101,21 @@ body {
   animation: none;
   mix-blend-mode: normal;
 }
+
+@property --tx {
+  syntax: '<length>';
+  initial-value: 0;
+  inherits: false;
+}
+
+@property --ty {
+  syntax: '<length>';
+  initial-value: 0;
+  inherits: false;
+}
+
+@property --scale {
+  syntax: '<number>';
+  initial-value: 1;
+  inherits: false;
+}
