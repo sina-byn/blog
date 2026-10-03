@@ -6,12 +6,16 @@ import pkg from '@/../package.json';
 // * components
 import ThemeSwitch from './ThemeSwitch';
 
+// * assets
+import Signature from '@/assets/signature.svg';
+
 // * icons
 import { ArrowUpRight } from '@geist-ui/icons';
+import Image from 'next/image';
 
 const Footer = () => {
   return (
-    <footer className='max-w-prose mx-auto px-4 sm:px-0 mt-10'>
+    <footer className='max-w-prose mx-auto px-4 sm:px-0 mt-10 *:last:pb-32'>
       <div className='flex items-center justify-between gap-x-4'>
         <nav className='flex items-center gap-x-6 text-sm dark:text-gray-400'>
           <Link
@@ -49,10 +53,19 @@ const Footer = () => {
       </div>
 
       {pkg?.license === 'MIT' && (
-        <div className='text-sm text-neutral-600 lg:text-neutral-400 mt-4 pb-32'>
+        <div className='text-sm text-neutral-600 lg:text-neutral-400 mt-4 mb-6'>
           &copy; {new Date().getFullYear()} {pkg.license} Licensed
         </div>
       )}
+
+      <Image
+        width={380}
+        height={240}
+        loading='lazy'
+        alt='signature'
+        src={Signature}
+        className='signature -ml-8.5 invert-100 dark:invert-0'
+      />
     </footer>
   );
 };
